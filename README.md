@@ -1,4 +1,4 @@
-Changed Google Maps implementation for Android:
+Changed Google Maps implementation for Android:<br>
 1.add click event into map event like this:
 	map.addEventListener('click', function(e) {
 	    var lng = e.longitude;

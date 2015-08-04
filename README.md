@@ -17,7 +17,6 @@ Changed Google Maps implementation for Android:
         image: img, //resourceId,
         draggable: true,
   };
-  
-  module.createAnnotation(params);<br>
+  module.createAnnotation(params);
   
 3. more to add

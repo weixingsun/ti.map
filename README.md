@@ -11,12 +11,12 @@ Changed Google Maps implementation for Android:
 2.add annotation by resource id:
 
 	var params = {
-        latitude:lat,
-        longitude:lng,
-        animate:true,
-        image: img, //resourceId,
-        draggable: true,
-  };
-  module.createAnnotation(params);
+	  latitude:lat,
+	  longitude:lng,
+	  animate:true,
+	  image: img, //resourceId,
+	  draggable: true,
+	};
+	module.createAnnotation(params);
   
 3. more to add

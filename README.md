@@ -1,13 +1,18 @@
-# Titanium Map Module [![Build Status](https://travis-ci.org/appcelerator-modules/ti.map.svg)](https://travis-ci.org/appcelerator-modules/ti.map)
-
-This is the Map Module for Titanium.
-
-## Contributors
-
-* Please see https://github.com/appcelerator-modules/ti.map/graphs/contributors
-* Interested in contributing? Read the [contributors/committer's](https://wiki.appcelerator.org/display/community/Home) guide.
-
-## Legal
-
-This module is Copyright (c) 2010-2014 by Appcelerator, Inc. All Rights Reserved. Usage of this module is subject to 
-the Terms of Service agreement with Appcelerator, Inc.  
+Changed Google Maps implementation for Android:
+1.add click event into map event like this:
+	map.addEventListener('click', function(e) {
+	    var lng = e.longitude;
+	    var lat = e.latitude;
+		Ti.API.info('map.clicked:'+lat+','+lng);
+	});
+2.add annotation by resource id
+	var params = {
+        latitude:lat,
+        longitude:lng,
+        animate:true,
+        image: img, //resourceId,
+        draggable: true,
+  };
+  module.createAnnotation(params);
+  
+3. more to add

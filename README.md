@@ -1,11 +1,15 @@
-Changed Google Maps implementation for Android:<br>
+Changed Google Maps implementation for Android:
+
 1.add click event into map event like this:
+
 	map.addEventListener('click', function(e) {
 	    var lng = e.longitude;
 	    var lat = e.latitude;
 		Ti.API.info('map.clicked:'+lat+','+lng);
 	});
-2.add annotation by resource id
+	
+2.add annotation by resource id:
+
 	var params = {
         latitude:lat,
         longitude:lng,
@@ -13,6 +17,7 @@ Changed Google Maps implementation for Android:<br>
         image: img, //resourceId,
         draggable: true,
   };
-  module.createAnnotation(params);
+  
+  module.createAnnotation(params);<br>
   
 3. more to add

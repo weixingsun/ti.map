@@ -38,12 +38,14 @@ public class MapModule extends KrollModule
 	public static final String PROPERTY_TILT = "tilt";
 	public static final String PROPERTY_BEARING = "bearing";
 	public static final String PROPERTY_ZOOM = "zoom";
+	public static final String PROPERTY_NAME = "name";
 	public static final String PROPERTY_ZORDER_ON_TOP = "zOrderOnTop";
 
 	public static final String EVENT_PIN_CHANGE_DRAG_STATE = "pinchangedragstate";
 	public static final String EVENT_ON_SNAPSHOT_READY = "onsnapshotready";
 
 	public static final String PROPERTY_STROKE_COLOR = "strokeColor";
+	public static final String PROPERTY_COLOR = "color";
 	public static final String PROPERTY_STROKE_WIDTH = "strokeWidth";
 	public static final String PROPERTY_FILL_COLOR = "fillColor";
 	public static final String PROPERTY_ZINDEX = "zIndex";

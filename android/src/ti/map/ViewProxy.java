@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import org.appcelerator.kroll.KrollDict;
 import org.appcelerator.kroll.annotations.Kroll;
 import org.appcelerator.kroll.common.AsyncResult;
 import org.appcelerator.kroll.common.Log;
@@ -47,6 +48,8 @@ public class ViewProxy extends TiViewProxy {
 	private static final int MSG_MAX_ZOOM = MSG_FIRST_ID + 511;
 	private static final int MSG_MIN_ZOOM = MSG_FIRST_ID + 512;
 	private static final int MSG_SNAP_SHOT = MSG_FIRST_ID + 513;
+	private static final int MSG_ADD_MARKER = MSG_FIRST_ID + 600;
+	private static final int MSG_REMOVE_MARKER = MSG_FIRST_ID + 601;
 
 	private static final int MSG_ADD_POLYGON = MSG_FIRST_ID + 901;
 	private static final int MSG_REMOVE_POLYGON = MSG_FIRST_ID + 902;
@@ -90,7 +93,18 @@ public class ViewProxy extends TiViewProxy {
 	public boolean handleMessage(Message msg) {
 		AsyncResult result = null;
 		switch (msg.what) {
-
+		case MSG_ADD_MARKER:{
+			result = (AsyncResult) msg.obj;
+			handleAddMarker((KrollDict) result.getArg());
+			result.setResult(null);
+			return true;
+		}
+		case MSG_REMOVE_MARKER:{
+			result = (AsyncResult) msg.obj;
+			handleRemoveMarker((String) result.getArg());
+			result.setResult(null);
+			return true;
+		}
 		case MSG_ADD_ANNOTATION: {
 			result = (AsyncResult) msg.obj;
 			handleAddAnnotation((AnnotationProxy) result.getArg());
@@ -204,14 +218,14 @@ public class ViewProxy extends TiViewProxy {
 		
 		case MSG_ADD_POLYLINE: {
 			result = (AsyncResult) msg.obj;
-			handleAddPolyline(result.getArg());
+			handleAddPolyline((KrollDict)result.getArg());
 			result.setResult(null);
 			return true;
 		}
 
 		case MSG_REMOVE_POLYLINE: {
 			result = (AsyncResult) msg.obj;
-			handleRemovePolyline((PolylineProxy) result.getArg());
+			handleRemovePolyline((String) result.getArg());
 			result.setResult(null);
 			return true;
 		}
@@ -325,7 +339,44 @@ public class ViewProxy extends TiViewProxy {
 			}
 		}
 	}
-
+	private void handleAddMarker(KrollDict kd) {
+		TiUIMapView mapView = (TiUIMapView) peekView();
+		if (mapView.getMap() != null) {
+			mapView.addMarker(kd);
+		}
+	}
+	@Kroll.method
+	public void addMarker(KrollDict kd) {
+		TiUIMapView mapView = (TiUIMapView) peekView();
+		if (mapView.getMap() != null) {
+			//mapView.addMarker(kd);
+			if (TiApplication.isUIThread()) {
+				handleAddMarker(kd);
+			} else {
+				TiMessenger.sendBlockingMainMessage(getMainHandler()
+						.obtainMessage(MSG_ADD_MARKER), kd);
+			}
+		}
+	}
+	private void handleRemoveMarker(String id){
+		TiUIMapView mapView = (TiUIMapView) peekView();
+		if (mapView.getMap() != null) {
+			mapView.removeMarker(id);
+		}
+	}
+	@Kroll.method
+	public void removeMarker(String id) {
+		TiUIMapView mapView = (TiUIMapView) peekView();
+		if (mapView.getMap() != null) {
+			//mapView.removeMarker(id);
+			if (TiApplication.isUIThread()) {
+				handleRemoveMarker(id);
+			} else {
+				TiMessenger.sendBlockingMainMessage(getMainHandler()
+						.obtainMessage(MSG_REMOVE_MARKER), id);
+			}
+		}
+	}
 	@Kroll.method
 	public void snapshot() {
 		if (TiApplication.isUIThread()) {
@@ -754,32 +805,20 @@ public class ViewProxy extends TiViewProxy {
 	 * 
 	 **/
 	@Kroll.method
-	public void addPolyline(PolylineProxy polyline) {
+	public void addPolyline(KrollDict dict) {
 		if (TiApplication.isUIThread()) {
-			handleAddPolygon(polyline);
+			handleAddPolyline(dict);
 		} else {
 			TiMessenger.sendBlockingMainMessage(
-					getMainHandler().obtainMessage(MSG_ADD_POLYLINE), polyline);
+					getMainHandler().obtainMessage(MSG_ADD_POLYLINE), dict);
 		}
 	}
 
-	public void handleAddPolyline(Object polyline) {
-		if (polyline == null) {
-			return;
+	public void handleAddPolyline(KrollDict dict) {
+		TiUIMapView mapView = (TiUIMapView) peekView();
+		if (mapView.getMap() != null) {
+			mapView.addPolyline(dict);
 		}
-		PolylineProxy p = (PolylineProxy) polyline;
-		TiUIView view = peekView();
-		if (view instanceof TiUIMapView) {
-			TiUIMapView mapView = (TiUIMapView) view;
-			if (mapView.getMap() != null) {
-				mapView.addPolyline(p);
-			} else {
-				addPreloadPolyline(p);
-			}
-		} else {
-			addPreloadPolyline(p);
-		}
-
 	}
 
 	public void addPreloadPolyline(PolylineProxy p) {
@@ -795,27 +834,19 @@ public class ViewProxy extends TiViewProxy {
 	}
 
 	@Kroll.method
-	public void removePolyline(PolylineProxy polyline) {
+	public void removePolyline(String id) {
 		if (TiApplication.isUIThread()) {
-			handleRemovePolyline(polyline);
+			handleRemovePolyline(id);
 		} else {
 			TiMessenger.sendBlockingMainMessage(
-					getMainHandler().obtainMessage(MSG_REMOVE_POLYLINE),
-					polyline);
+					getMainHandler().obtainMessage(MSG_REMOVE_POLYLINE),id);
 		}
 	}
 
-	public void handleRemovePolyline(PolylineProxy polyline) {
-		TiUIView view = peekView();
-		if (view instanceof TiUIMapView) {
-			TiUIMapView mapView = (TiUIMapView) view;
-			if (mapView.getMap() != null) {
-				mapView.removePolyline(polyline);
-			} else {
-				removePreloadPolyline(polyline);
-			}
-		} else {
-			removePreloadPolyline(polyline);
+	public void handleRemovePolyline(String id) {
+		TiUIMapView mapView = (TiUIMapView) peekView();
+		if (mapView.getMap() != null) {
+			mapView.removePolyline(id);
 		}
 	}
 

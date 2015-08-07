@@ -60,6 +60,8 @@ public class AnnotationProxy extends KrollProxy
 	private int iconImageHeight = 0;
 	private String annoTitle;
 
+	String strLng;
+	String strLat;
 	private static final int MSG_FIRST_ID = KrollProxy.MSG_LAST_ID + 1;
 
 	private static final int MSG_SET_LON = MSG_FIRST_ID + 300;
@@ -143,10 +145,12 @@ public class AnnotationProxy extends KrollProxy
 		double latitude = 0;
 
 		if (hasProperty(TiC.PROPERTY_LONGITUDE)) {
-			longitude = TiConvert.toDouble(getProperty(TiC.PROPERTY_LONGITUDE));
+			strLng = getProperty(TiC.PROPERTY_LONGITUDE).toString();
+			longitude = TiConvert.toDouble(strLng);
 		}
 		if (hasProperty(TiC.PROPERTY_LATITUDE)) {
-			latitude = TiConvert.toDouble(getProperty(TiC.PROPERTY_LATITUDE));
+			strLat = getProperty(TiC.PROPERTY_LATITUDE).toString();
+			latitude = TiConvert.toDouble(strLat);
 		}
 		LatLng position = new LatLng(latitude, longitude);
 		markerOptions.position(position);

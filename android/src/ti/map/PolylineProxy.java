@@ -48,6 +48,7 @@ public class PolylineProxy extends KrollProxy implements IShape
 	public static final String PROPERTY_STROKE_WIDTH2 = "width";
 
 	public static final String PROPERTY_ZINDEX = "zIndex";
+	public String name;
 
 	public PolylineProxy() {
 		super();
@@ -99,7 +100,11 @@ public class PolylineProxy extends KrollProxy implements IShape
 		// (float)	 strokeWidth
 		// (int) 	 fillColor
 		// (float)	 zIndex
-
+		// (String)  name
+		
+		if (hasProperty(MapModule.PROPERTY_NAME)) {
+			 name = getProperty(MapModule.PROPERTY_NAME).toString();
+		}
 		if (hasProperty(MapModule.PROPERTY_POINTS)) {
 			 processPoints(getProperty(MapModule.PROPERTY_POINTS), false);
 		}

@@ -8,6 +8,7 @@
 package ti.map;
 
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.HashMap;
 
 import org.appcelerator.kroll.KrollDict;
@@ -39,11 +40,15 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.GoogleMapOptions;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClickListener, GoogleMap.OnMapClickListener,
 	GoogleMap.OnCameraChangeListener, GoogleMap.OnMarkerDragListener, GoogleMap.OnInfoWindowClickListener, GoogleMap.InfoWindowAdapter,
@@ -52,23 +57,31 @@ public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClick
 
 	private static final String TAG = "TiUIMapView";
 	private GoogleMap map;
+	private MarkerOptions markerOptions;
+	private PolylineOptions polylineOptions;
+	
 	protected boolean animate = false;
 	protected boolean preLayout = true;
 	protected LatLngBounds preLayoutUpdateBounds;
-	protected ArrayList<TiMarker> timarkers;
 	protected AnnotationProxy selectedAnnotation;
 	private int retries = 0;
 
 	private ArrayList<CircleProxy> currentCircles;
 	private ArrayList<PolygonProxy> currentPolygons;
-	private ArrayList<PolylineProxy> currentPolylines;
+	//protected ArrayList<TiMarker> timarkers;
+	//private ArrayList<PolylineProxy> currentPolylines;
+	//
+	private Map<String,Marker> markers;	//strLat,strLng
+	private Map<String,Polyline> polylines;	//name
 
 	public TiUIMapView(final TiViewProxy proxy, Activity activity) {
 		super(proxy, activity);
-		timarkers = new ArrayList<TiMarker>();
+		//timarkers = new ArrayList<TiMarker>();
 		currentCircles = new ArrayList<CircleProxy>();
 		currentPolygons = new ArrayList<PolygonProxy>();
-		currentPolylines = new ArrayList<PolylineProxy>();
+		//currentPolylines = new ArrayList<PolylineProxy>();
+		markers = new HashMap<String,Marker>();
+		polylines = new HashMap<String,Polyline>();
 	}
 
 	/**
@@ -134,7 +147,7 @@ public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClick
 		ArrayList<PolylineProxy> polylines = ((ViewProxy) proxy)
 				.getPreloadPolylines();
 		for (int i = 0; i < polylines.size(); i++) {
-			addPolyline(polylines.get(i));
+			//addPolyline(polylines.get(i));
 		}
 	}
 
@@ -392,7 +405,7 @@ public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClick
 			map.moveCamera(camUpdate);
 		}
 	}
-
+///////////////////////////////////////////////////////////////////////////////////////////////
 	protected void addAnnotation(AnnotationProxy annotation) {
 		// if annotation already on map, remove it first then re-add it
 		TiMarker tiMarker = annotation.getTiMarker();
@@ -404,9 +417,62 @@ public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClick
 		Marker marker = map.addMarker(annotation.getMarkerOptions());
 		tiMarker = new TiMarker(marker, annotation);
 		annotation.setTiMarker(tiMarker);
-		timarkers.add(tiMarker);
+		//timarkers.add(tiMarker);
+		String id = annotation.strLat+","+annotation.strLng;
+		markers.put(id,marker);
 	}
-
+	public boolean isInteger(Object s) {
+		if(s instanceof Integer){
+			return true;
+		}
+		return false;
+	}
+	protected void addMarker(KrollDict kd) {
+		markerOptions = new MarkerOptions();
+		String id = null;
+		if (kd.containsKey(TiC.PROPERTY_LONGITUDE) && kd.containsKey(TiC.PROPERTY_LATITUDE)) {
+			String strLng = kd.get(TiC.PROPERTY_LONGITUDE).toString();
+			double longitude = TiConvert.toDouble(strLng);
+			String strLat = kd.get(TiC.PROPERTY_LATITUDE).toString();
+			double latitude = TiConvert.toDouble(strLat);
+			LatLng position = new LatLng(latitude, longitude);
+			markerOptions.position(position);
+			id = strLat+","+strLng;
+		}
+		if(kd.containsKey(TiC.PROPERTY_ID)){
+			id = kd.get(TiC.PROPERTY_ID).toString();
+		}
+		if (kd.containsKey(MapModule.PROPERTY_DRAGGABLE)) {
+			markerOptions.draggable(TiConvert.toBoolean(kd.get(MapModule.PROPERTY_DRAGGABLE)));
+		}
+		if (kd.containsKey(TiC.PROPERTY_PINCOLOR)) {
+			markerOptions.icon(BitmapDescriptorFactory.defaultMarker(TiConvert.toFloat(kd.get(TiC.PROPERTY_PINCOLOR))));
+		}
+		if (kd.containsKey(TiC.PROPERTY_IMAGE)) {
+			Object strImageId = kd.get(TiC.PROPERTY_IMAGE);
+			if(isInteger(strImageId)){
+				markerOptions.icon(BitmapDescriptorFactory.fromResource((Integer)strImageId));
+			}
+		}
+		Marker marker = map.addMarker(markerOptions);
+		markers.put(id,marker);
+	}
+	public Marker findMarkerById(String id) {
+		Marker marker = null;
+		//markers.put(id,marker);
+		if(markers.containsKey(id)){
+			marker = markers.get(id);
+		}
+		return marker;
+	}
+	public void removeMarker(String id){
+		Marker mk = findMarkerById(id);
+		if(mk!=null){
+			mk.remove();
+			Log.i(TAG, "removeMarker("+id+")");
+		}
+		markers.remove(id);
+	}
 	protected void addAnnotations(Object[] annotations) {
 		for (int i = 0; i < annotations.length; i++) {
 			Object obj = annotations[i];
@@ -425,6 +491,7 @@ public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClick
 	}
 
 	protected void removeAllAnnotations() {
+	/*
 		for (int i = 0; i < timarkers.size(); i++) {
 			TiMarker timarker = timarkers.get(i);
 			timarker.getMarker().remove();
@@ -434,19 +501,20 @@ public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClick
 			}
 		}
 		timarkers.clear();
+		*/
 	}
 
 	public TiMarker findMarkerByTitle(String title) {
-		for (int i = 0; i < timarkers.size(); i++) {
+		/*for (int i = 0; i < timarkers.size(); i++) {
 			TiMarker timarker = timarkers.get(i);
 			AnnotationProxy annoProxy = timarker.getProxy();
 			if (annoProxy != null && annoProxy.getTitle().equals(title)) {
 				return timarker;
 			}
 		}
+		*/
 		return null;
 	}
-
 	protected void removeAnnotation(Object annotation) {
 		TiMarker timarker = null;
 		if (annotation instanceof TiMarker) {
@@ -457,7 +525,7 @@ public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClick
 			timarker = findMarkerByTitle((String) annotation);
 		}
 
-		if (timarker != null && timarkers.remove(timarker)) {
+		if (timarker != null) {// && timarkers.remove(timarker)
 			timarker.getMarker().remove();
 			AnnotationProxy proxy = timarker.getProxy();
 			if (proxy != null) {
@@ -500,23 +568,22 @@ public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClick
 	}
 
 	private AnnotationProxy getProxyByMarker(Marker m) {
-		if (m != null) {
+		/*if (m != null) {
 			for (int i = 0; i < timarkers.size(); i++) {
 				TiMarker timarker = timarkers.get(i);
 				if (m.equals(timarker.getMarker())) {
 					return timarker.getProxy();
 				}
 			}
-		}
+		}*/
 		return null;
 	}
-
+///////////////////////////////////////////////////////////////////////////////////////////////
 	public void addRoute(RouteProxy r) {
 		// check if route already added.
 		if (r.getRoute() != null) {
 			return;
 		}
-
 		r.processOptions();
 		r.setRoute(map.addPolyline(r.getOptions()));
 	}
@@ -525,11 +592,10 @@ public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClick
 		if (r.getRoute() == null) {
 			return;
 		}
-
 		r.getRoute().remove();
 		r.setRoute(null);
 	}
-
+///////////////////////////////////////////////////////////////////////////////////////////////
 	/**
 	 * Polygon
 	 */
@@ -579,45 +645,81 @@ public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClick
 	/**
 	 * Polyline
 	 */
-	public void addPolyline(PolylineProxy p) {
-		// check if polyline already added.
-		if (p.getPolyline() != null) {
-			return;
+	 	protected void addPolyline(KrollDict kd) {
+		polylineOptions = new PolylineOptions();
+		String id = null;
+		if(kd.containsKey(TiC.PROPERTY_ID)){
+			id = kd.get(TiC.PROPERTY_ID).toString();
 		}
-		p.processOptions();
-		p.setPolyline(map.addPolyline(p.getOptions()));
-
-		currentPolylines.add(p);
+		if (kd.containsKey(MapModule.PROPERTY_STROKE_COLOR)) {
+			polylineOptions.color(TiConvert.toColor((String)kd.get(MapModule.PROPERTY_STROKE_COLOR)));
+		}
+		if (kd.containsKey(TiC.PROPERTY_COLOR)) {
+			polylineOptions.color(TiConvert.toColor((String)kd.get(TiC.PROPERTY_COLOR)));
+		}
+		if (kd.containsKey(MapModule.PROPERTY_STROKE_WIDTH)) {
+			polylineOptions.width(TiConvert.toFloat(kd.get(MapModule.PROPERTY_STROKE_WIDTH)));
+		}
+		if (kd.containsKey(TiC.PROPERTY_WIDTH)) {
+			polylineOptions.width(TiConvert.toFloat(kd.get(TiC.PROPERTY_WIDTH)));
+		}
+		if (kd.containsKey(TiC.PROPERTY_ZINDEX)) {
+			polylineOptions.zIndex(TiConvert.toFloat(kd.get(TiC.PROPERTY_ZINDEX)));
+		}
+		if (kd.containsKey(MapModule.PROPERTY_POINTS)) {
+			Object[] oPoints = (Object[])kd.get(MapModule.PROPERTY_POINTS);
+			Log.i(TAG,oPoints.toString());
+			ArrayList<LatLng> list = new ArrayList<LatLng>();
+			for(Object o: oPoints){
+				list.add(parseLocation(o));
+			}
+			polylineOptions.addAll(list);
+		}
+		Polyline pl = map.addPolyline(polylineOptions);
+		polylines.put(id,pl);
 	}
-
+	// A location can either be a an array of longitude, latitude pairings or
+	// an array of longitude, latitude objects.
+	// e.g. [123.33, 34.44], OR {longitude: 123.33, latitude, 34.44}
+	private LatLng parseLocation(Object loc) {
+		LatLng location = null;
+		if (loc instanceof HashMap) {
+			HashMap<String, String> point = (HashMap<String, String>) loc;
+			location = new LatLng(TiConvert.toDouble(point
+					.get(TiC.PROPERTY_LATITUDE)), TiConvert.toDouble(point
+					.get(TiC.PROPERTY_LONGITUDE)));
+		} else if (loc instanceof Object[]) {
+			Object[] temp = (Object[]) loc;
+			location = new LatLng(TiConvert.toDouble(temp[1]), TiConvert.toDouble(temp[0]));
+		}
+		return location;
+	}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	protected void addPolylines(Object[] polylines) {
 		for (int i = 0; i < polylines.length; i++) {
 			Object obj = polylines[i];
 			if (obj instanceof PolylineProxy) {
 				PolylineProxy polyline = (PolylineProxy) obj;
-				addPolyline(polyline);
+				//addPolyline(polyline);
 			}
 		}
 	}
 
-	public void removePolyline(PolylineProxy p) {
-		if (p.getPolyline() == null) {
-			return;
-		}
-
-		if(currentPolylines.contains(p)) {
-			p.getPolyline().remove();
-			p.setPolyline(null);
-			currentPolylines.remove(p);
+	public void removePolyline(String id) {
+		if(polylines.containsKey(id)) {
+			Polyline pl = polylines.get(id);
+			if(pl!=null) pl.remove();
+			polylines.remove(id);
 		}
 	}
 
 	public void removeAllPolylines() {
+	/*
 		for (PolylineProxy polylineProxy : currentPolylines) {
 			polylineProxy.getPolyline().remove();
 			polylineProxy.setPolyline(null);
 		}
-		currentPolylines.clear();
+		currentPolylines.clear();*/
 	}
 
 
@@ -823,7 +925,7 @@ public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClick
 		}
 
 		// currentPolylines
-		if(currentPolylines.size() > 0) {
+		/*if(currentPolylines.size() > 0) {
 			PolylineBoundary boundary = new PolylineBoundary();
 
 			double baseVal = 2;
@@ -841,7 +943,7 @@ public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClick
 					fireShapeClickEvent(point, polylineProxy, MapModule.PROPERTY_POLYLINE);
 				}
 			}
-		}
+		}*/
 
 	}
 
@@ -912,9 +1014,9 @@ public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClick
 		map.clear();
 		currentCircles = null;
 		currentPolygons = null;
-		currentPolylines = null;
+		//currentPolylines = null;
 		map = null;
-		timarkers.clear();
+		markers.clear();
 		super.release();
 	}
 

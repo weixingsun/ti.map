@@ -48,6 +48,7 @@ public class ViewProxy extends TiViewProxy {
 	private static final int MSG_MAX_ZOOM = MSG_FIRST_ID + 511;
 	private static final int MSG_MIN_ZOOM = MSG_FIRST_ID + 512;
 	private static final int MSG_SNAP_SHOT = MSG_FIRST_ID + 513;
+	private static final int MSG_ZOOM = MSG_FIRST_ID + 514;
 	private static final int MSG_ADD_MARKER = MSG_FIRST_ID + 600;
 	private static final int MSG_REMOVE_MARKER = MSG_FIRST_ID + 601;
 
@@ -105,7 +106,88 @@ public class ViewProxy extends TiViewProxy {
 			result.setResult(null);
 			return true;
 		}
-		case MSG_ADD_ANNOTATION: {
+		case MSG_MAX_ZOOM: {
+			result = (AsyncResult) msg.obj;
+			result.setResult(getMaxZoom());
+			return true;
+		}
+		
+		case MSG_MIN_ZOOM: {
+			result = (AsyncResult) msg.obj;
+			result.setResult(getMinZoom());
+			return true;
+		}
+		
+		case MSG_ZOOM: {
+			result = (AsyncResult) msg.obj;
+			result.setResult(getZoom());
+			return true;
+		}
+
+		case MSG_CHANGE_ZOOM: {
+			handleZoom(msg.arg1);
+			return true;
+		}
+
+		case MSG_SET_LOCATION: {
+			handleSetLocation((HashMap) msg.obj);
+			return true;
+		}
+
+		case MSG_SNAP_SHOT: {
+			handleSnapshot();
+			return true;
+		}
+		case MSG_ADD_POLYLINE: {
+			result = (AsyncResult) msg.obj;
+			handleAddPolyline((KrollDict)result.getArg());
+			result.setResult(null);
+			return true;
+		}
+
+		case MSG_REMOVE_POLYLINE: {
+			result = (AsyncResult) msg.obj;
+			handleRemovePolyline((String) result.getArg());
+			result.setResult(null);
+			return true;
+		}
+
+		/*
+		case MSG_ADD_POLYGON: {
+			result = (AsyncResult) msg.obj;
+			handleAddPolygon(result.getArg());
+			result.setResult(null);
+			return true;
+		}
+
+		case MSG_REMOVE_POLYGON: {
+			result = (AsyncResult) msg.obj;
+			handleRemovePolygon((PolygonProxy) result.getArg());
+			result.setResult(null);
+			return true;
+		}
+
+		case MSG_REMOVE_ALL_POLYGONS: {
+			result = (AsyncResult) msg.obj;
+			handleRemoveAllPolygons();
+			result.setResult(null);
+			return true;
+		}
+		
+		case MSG_SELECT_ANNOTATION: {
+			result = (AsyncResult) msg.obj;
+			//handleSelectAnnotation(result.getArg());
+			result.setResult(null);
+			return true;
+		}
+
+		case MSG_DESELECT_ANNOTATION: {
+			result = (AsyncResult) msg.obj;
+			handleDeselectAnnotation(result.getArg());
+			result.setResult(null);
+			return true;
+		}*/
+		/*case MSG_ADD_ANNOTATION: {
 			result = (AsyncResult) msg.obj;
 			handleAddAnnotation((AnnotationProxy) result.getArg());
 			result.setResult(null);
@@ -140,19 +222,6 @@ public class ViewProxy extends TiViewProxy {
 			return true;
 		}
 
-		case MSG_SELECT_ANNOTATION: {
-			result = (AsyncResult) msg.obj;
-			handleSelectAnnotation(result.getArg());
-			result.setResult(null);
-			return true;
-		}
-
-		case MSG_DESELECT_ANNOTATION: {
-			result = (AsyncResult) msg.obj;
-			handleDeselectAnnotation(result.getArg());
-			result.setResult(null);
-			return true;
-		}
 
 		case MSG_ADD_ROUTE: {
 			result = (AsyncResult) msg.obj;
@@ -166,71 +235,9 @@ public class ViewProxy extends TiViewProxy {
 			handleRemoveRoute((RouteProxy) result.getArg());
 			result.setResult(null);
 			return true;
-		}
+		}*/
 		
-		case MSG_MAX_ZOOM: {
-			result = (AsyncResult) msg.obj;
-			result.setResult(getMaxZoom());
-			return true;
-		}
-		
-		case MSG_MIN_ZOOM: {
-			result = (AsyncResult) msg.obj;
-			result.setResult(getMinZoom());
-			return true;
-		}
-
-		case MSG_CHANGE_ZOOM: {
-			handleZoom(msg.arg1);
-			return true;
-		}
-
-		case MSG_SET_LOCATION: {
-			handleSetLocation((HashMap) msg.obj);
-			return true;
-		}
-
-		case MSG_SNAP_SHOT: {
-			handleSnapshot();
-			return true;
-		}
-
-		case MSG_ADD_POLYGON: {
-			result = (AsyncResult) msg.obj;
-			handleAddPolygon(result.getArg());
-			result.setResult(null);
-			return true;
-		}
-
-		case MSG_REMOVE_POLYGON: {
-			result = (AsyncResult) msg.obj;
-			handleRemovePolygon((PolygonProxy) result.getArg());
-			result.setResult(null);
-			return true;
-		}
-
-		case MSG_REMOVE_ALL_POLYGONS: {
-			result = (AsyncResult) msg.obj;
-			handleRemoveAllPolygons();
-			result.setResult(null);
-			return true;
-		}
-		
-		case MSG_ADD_POLYLINE: {
-			result = (AsyncResult) msg.obj;
-			handleAddPolyline((KrollDict)result.getArg());
-			result.setResult(null);
-			return true;
-		}
-
-		case MSG_REMOVE_POLYLINE: {
-			result = (AsyncResult) msg.obj;
-			handleRemovePolyline((String) result.getArg());
-			result.setResult(null);
-			return true;
-		}
-
-		case MSG_REMOVE_ALL_POLYLINES: {
+		/*case MSG_REMOVE_ALL_POLYLINES: {
 			result = (AsyncResult) msg.obj;
 			handleRemoveAllPolylines();
 			result.setResult(null);
@@ -256,11 +263,14 @@ public class ViewProxy extends TiViewProxy {
 			handleRemoveAllCircles();
 			result.setResult(null);
 			return true;
-		}
+		}*/
 
 		default: {
-			Log.w(TAG,"msg="+msg);
-			return super.handleMessage(msg);
+			boolean yes=true;
+			try{
+				yes = super.handleMessage(msg);
+			}catch(Throwable t){}
+			return yes;
 		}
 		}
 	}
@@ -552,7 +562,7 @@ public class ViewProxy extends TiViewProxy {
 	public void handleSelectAnnotation(Object annotation) {
 		TiUIView view = peekView();
 		if (view instanceof TiUIMapView) {
-			((TiUIMapView) view).selectAnnotation(annotation);
+			//((TiUIMapView) view).selectAnnotation(annotation);
 		}
 	}
 
@@ -661,7 +671,23 @@ public class ViewProxy extends TiViewProxy {
 					.obtainMessage(MSG_MIN_ZOOM));
 		}
 	}
-
+	@Kroll.method
+	public float getZoomLevel() {
+		if (TiApplication.isUIThread()) {
+			return getZoom();
+		} else {
+			return (Float) TiMessenger.sendBlockingMainMessage(getMainHandler()
+					.obtainMessage(MSG_ZOOM));
+		}
+	}
+	public float getZoom(){
+		TiUIView view = peekView();
+		if (view instanceof TiUIMapView) {
+			return ((TiUIMapView) view).getZoom();
+		} else {
+			return 0;
+		}
+	}
 	@Kroll.method
 	public void removeRoute(RouteProxy route) {
 		if (TiApplication.isUIThread()) {
@@ -1008,8 +1034,7 @@ public class ViewProxy extends TiViewProxy {
 			HashMap dict = (HashMap) location;
 			if (!dict.containsKey(TiC.PROPERTY_LATITUDE)
 					|| !dict.containsKey(TiC.PROPERTY_LONGITUDE)) {
-				Log.e(TAG,
-						"Unable to set location. Missing latitude or longitude.");
+				Log.e(TAG,"Unable to set location. Missing latitude or longitude.");
 				return;
 			}
 			if (TiApplication.isUIThread()) {
@@ -1026,8 +1051,7 @@ public class ViewProxy extends TiViewProxy {
 		if (view instanceof TiUIMapView) {
 			((TiUIMapView) view).updateCamera(location);
 		} else {
-			Log.e(TAG,
-					"Unable set location since the map view has not been created yet. Use setRegion() instead.");
+			Log.e(TAG,"Unable set location since the map view has not been created yet. Use setRegion() instead.");
 		}
 	}
 	

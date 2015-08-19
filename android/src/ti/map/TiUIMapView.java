@@ -9,6 +9,7 @@ package ti.map;
 
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Map.*;
 import java.util.HashMap;
 
 import org.appcelerator.kroll.KrollDict;
@@ -50,9 +51,9 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
-public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClickListener, GoogleMap.OnMapClickListener,
+public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMapClickListener, 
 	GoogleMap.OnCameraChangeListener, GoogleMap.OnMarkerDragListener, GoogleMap.OnInfoWindowClickListener, GoogleMap.InfoWindowAdapter,
-	GoogleMap.OnMapLongClickListener, GoogleMap.OnMapLoadedCallback
+	GoogleMap.OnMapLongClickListener, GoogleMap.OnMapLoadedCallback, GoogleMap.OnMarkerClickListener
 {
 
 	private static final String TAG = "TiUIMapView";
@@ -364,9 +365,9 @@ public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClick
 		CameraPosition.Builder cameraBuilder = new CameraPosition.Builder();
 		LatLng location = new LatLng(latitude, longitude);
 		cameraBuilder.target(location);
-		cameraBuilder.bearing(bearing);
-		cameraBuilder.tilt(tilt);
-		cameraBuilder.zoom(zoom);
+		if(bearing>0) cameraBuilder.bearing(bearing);
+		if(tilt>0) cameraBuilder.tilt(tilt);
+		if(zoom>0) cameraBuilder.zoom(zoom);
 
 		if (dict.containsKey(TiC.PROPERTY_LATITUDE_DELTA) && dict.get(TiC.PROPERTY_LATITUDE_DELTA) != null) {
 			latitudeDelta = TiConvert.toDouble(dict, TiC.PROPERTY_LATITUDE_DELTA);
@@ -771,6 +772,10 @@ public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClick
 		moveCamera(camUpdate, animate);
 	}
 
+	public float getZoom(){
+		float zoom = map.getCameraPosition().zoom;
+		return zoom;
+	}
 	public void fireShapeClickEvent(LatLng clickPosition, IShape shapeProxy, String clickSource) {
 
 		KrollDict d = new KrollDict();
@@ -842,6 +847,11 @@ public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClick
 
 	@Override
 	public boolean onMarkerClick(Marker marker) {
+		//fireClickEvent(marker, annoProxy, MapModule.PROPERTY_PIN);
+		String markerId = getKeyByValue(markers,marker);
+		fireClickEvent(marker.getPosition(),markerId);
+		return true;
+		/*
 		AnnotationProxy annoProxy = getProxyByMarker(marker);
 		if (annoProxy == null) {
 			Log.e(TAG, "Marker can not be found, click event won't fired.",
@@ -853,9 +863,7 @@ public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClick
 			selectedAnnotation = null;
 			fireClickEvent(marker, annoProxy, MapModule.PROPERTY_PIN);
 			return true;
-		}
-		fireClickEvent(marker, annoProxy, MapModule.PROPERTY_PIN);
-		selectedAnnotation = annoProxy;
+		}selectedAnnotation = annoProxy;
 		boolean showInfoWindow = TiConvert.toBoolean(
 				annoProxy.getProperty(MapModule.PROPERTY_SHOW_INFO_WINDOW),
 				true);
@@ -865,9 +873,28 @@ public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClick
 			return false;
 		} else {
 			return true;
-		}
+		}*/
 	}
-
+	public static <T, E> T getKeyByValue(Map<T, E> map, E value) {
+		for (Entry<T, E> entry : map.entrySet()) {
+			if (value.equals( entry.getValue())) {
+				return entry.getKey();
+			}
+		}
+		return null;
+	}
+	private void fireClickEvent(LatLng point,String markerId){
+		KrollDict d = new KrollDict();
+		d.put(TiC.PROPERTY_LATITUDE, point.latitude);
+		d.put(TiC.PROPERTY_LONGITUDE, point.longitude);
+		d.put(MapModule.PROPERTY_MAP, proxy);
+		d.put(TiC.PROPERTY_TYPE, TiC.EVENT_CLICK);
+		d.put(TiC.PROPERTY_SOURCE, proxy);
+		if(markerId!=null){
+			d.put("markerId", markerId);
+		}
+		proxy.fireEvent(TiC.EVENT_CLICK, d);
+	}
 	@Override
 	public void onMapClick(LatLng point) {
 		
@@ -876,16 +903,9 @@ public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClick
         //data.put("lat",ll.latitude);
         //data.put("lng",ll.longitude);
         //TiApplication.getInstance().fireAppEvent("clicked", data);
+		fireClickEvent(point,null);
 		
-		KrollDict d = new KrollDict();
-		d.put(TiC.PROPERTY_LATITUDE, point.latitude);
-		d.put(TiC.PROPERTY_LONGITUDE, point.longitude);
-		d.put(MapModule.PROPERTY_MAP, proxy);
-		d.put(TiC.PROPERTY_TYPE, TiC.EVENT_CLICK);
-		d.put(TiC.PROPERTY_SOURCE, proxy);
-		proxy.fireEvent(TiC.EVENT_CLICK, d);
-		
-		if (selectedAnnotation != null) {
+		/*if (selectedAnnotation != null) {
 			TiMarker tiMarker = selectedAnnotation.getTiMarker();
 			if (tiMarker != null) {
 				fireClickEvent(tiMarker.getMarker(), selectedAnnotation, null);
@@ -922,7 +942,7 @@ public class TiUIMapView extends TiUIFragment implements GoogleMap.OnMarkerClick
 					fireShapeClickEvent(point, polygonProxy, MapModule.PROPERTY_POLYGON);
 				}
 			}
-		}
+		}*/
 
 		// currentPolylines
 		/*if(currentPolylines.size() > 0) {
